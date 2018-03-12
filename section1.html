@@ -1,0 +1,412 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seat Charts Prototype</title>
+<link href="http://www.jqueryscript.net/css/jquerysctipttop.css" rel="stylesheet" type="text/css">
+<link rel="stylesheet" type="text/css" href="jquery.seat-charts.css">
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+
+<body>
+
+<div id="jquery-script-menu">
+	<h1>Seat Charts Prototype</h1>
+</div>
+<div class="wrapper">
+	<div class="container">
+		<!-- <canvas id="canvas" width="800" height="600"></canvas> -->
+		<div id="seat-map">
+			<div class="front-indicator">Front</div>
+		</div>
+
+		<div class="booking-details">
+			<h2>Booking Details</h2>
+			<h3> Selected Seats (<span id="counter">0</span>):</h3>
+			<ul id="selected-seats">
+			</ul>
+			Total: <b>$<span id="total">0</span></b>
+			<!-- <button id="myBtn">Checkout Modal</button> -->
+			<button class="checkout-button" id="myBtn" >Checkout &raquo;</button>
+			<!-- <button class="sold-button">Change to Sold &raquo;</button> -->
+			<div id="legend"></div>
+			<button class="button" onclick="window.location.href='index.html'">Back To Index &raquo;</button>
+		</div>
+	</div>
+</div>
+<!-- The Modal -->
+<div id="myModal" class="modal">
+
+  <!-- Modal content -->
+  <div class="modal-content">
+    <div class="modal-header">
+      <span class="close">&times;</span>
+      <h2>Checkout Modal</h2>
+    </div>
+    <div class="modal-body">
+      <p>Checkout</p>
+      <p>Ticket Booked: R1S22ST1 Front Seat RM 200 </p>
+      <p>Total: RM 200 </p>
+
+    </div>
+    <div class="modal-footer">
+      <h3>Modal Footer</h3>
+    </div>
+  </div>
+
+</div>
+
+<script src="http://code.jquery.com/jquery-1.12.4.min.js"></script> 
+<script src="jquery.seat-charts.js"></script> 
+<script>
+
+var price = 0; //price
+var $cart = $('#selected-seats'); //Sitting Area
+var $counter = $('#counter'); //Votes
+var $total = $('#total'); //Total money
+
+// var sColumn = 20;
+// var sRow = 26;
+var seatSection = 1;
+
+var seatMap = ['bbbbbbbbbbbb_bbbbbbbbbbbb'];
+var seatPrefix = ['A','B','C','D','E', 'F', 'G', 'H', 'I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+var seatName = [];
+
+var seatInfo = {
+	// a:{
+
+ //    	price: 99.9,
+ //    	section : seatSection,
+ //    	classes : 'Standard', 
+	// 	category: 'standard'
+ //    },
+    b:{
+        price: 200,
+        section : seatSection,
+        classes : 'front-seat', 
+		category: ' Front Seat'
+    },
+    r:{
+    	price: 0,
+    	section : seatSection,
+        classes : 'reserved-seat', 
+		category: ' Reserved Seat'
+    }
+};
+
+var seatItems = [
+            // [ 'a', 'available',   'Standard Seat' ],
+            // [ 'a', 'unavailable', 'Sold'],
+            [ 'b', 'available', 'Front Seat (RM 200)'],
+            [ 'b', 'unavailable', 'Sold'],
+            [ 'r', 'unavailable', 'Reserved']
+
+        ];
+        
+var maxSeats = 10;
+
+// for (var i = 0 ; i < sRow ; i++){
+//     var row = '' ;
+//     for (var j = 0 ; j < sColumn ; j++){                  
+//         row += 'a';
+//     }
+//     seatMap.push(row);
+// }
+
+for (var i = 0; i < 26; i++){
+	seatName.push(seatPrefix[i]);
+}
+
+var rowName = 'R';
+var colName = 'S';
+var secName = 'ST';
+var soldSeat = ['A_2'];
+var reservedSeat = ['A_3'];
+
+
+var sc = $('#seat-map').seatCharts({
+    map: seatMap,
+    naming : {
+        top : true,
+        rows: seatName,
+        getLabel : function (character, row, column) {
+            return column;
+        }
+    },
+    seats:seatInfo,
+
+    legend : { //Definition legend
+        node : $('#legend'),
+        items : seatItems
+    },
+    click: function () { //Click event
+    	
+        if (this.status() == 'available') { //optional seat
+            var ms = sc.find('selected').length;
+
+            //alert(ms);
+            if (ms < maxSeats) {
+
+                price = this.settings.data.price;
+
+
+
+        $('<option selected>'+rowName+(this.settings.row+1)+colName+this.settings.label+secName+this.settings.data.section+this.settings.data.category+' RM '+this.settings.data.price+'</option>')
+                    .attr('id', 'cart-item-'+this.settings.id)
+                    .attr('value', this.settings.id)
+                    .attr('alt', price)
+                    .data('seatId', this.settings.id)
+                    .appendTo($cart);
+
+                $counter.text(sc.find('selected').length+1);
+                $counter.attr('value', sc.find('selected').length+1);
+
+                $total.text(recalculateTotal(sc));
+                $total.attr('value', recalculateTotal(sc));
+
+                return 'selected';
+            }
+                alert('You can only choose '+ maxSeats + ' seats.');
+                return 'available';
+
+        } else if (this.status() == 'selected') { //Checked
+
+                //Update Number
+                $counter.text(sc.find('selected').length-1);
+                // $counter.attr('value', sc.find('selected').length-1);
+
+                //Delete reservation
+                // $('#cart-item-'+this.settings.id).remove();
+
+                //update totalnum
+                $total.text(recalculateTotal(sc));
+                $total.attr('value', recalculateTotal(sc));
+
+                //Delete reservation
+                  $('#cart-item-'+this.settings.id).remove();
+                //optional
+                return 'available';
+
+        } else if (this.status() == 'unavailable') { //sold
+            return 'unavailable';
+
+        } else {
+            return this.style();
+        }
+    },
+
+});
+sc.get(soldSeat).status('unavailable');
+sc.get(reservedSeat).status('reserved');
+
+
+
+function number_format (number, decimals, decPoint, thousandsSep) { // eslint-disable-line camelcase
+
+  number = (number + '').replace(/[^0-9+\-Ee.]/g, '')
+  var n = !isFinite(+number) ? 0 : +number
+  var prec = !isFinite(+decimals) ? 0 : Math.abs(decimals)
+  var sep = (typeof thousandsSep === 'undefined') ? ',' : thousandsSep
+  var dec = (typeof decPoint === 'undefined') ? '.' : decPoint
+  var s = ''
+  var toFixedFix = function (n, prec) {
+    var k = Math.pow(10, prec)
+    return '' + (Math.round(n * k) / k)
+      .toFixed(prec)
+  }
+  // @todo: for IE parseFloat(0.55).toFixed(0) = 0;
+  s = (prec ? toFixedFix(n, prec) : '' + Math.round(n)).split('.')
+  if (s[0].length > 3) {
+    s[0] = s[0].replace(/\B(?=(?:\d{3})+(?!\d))/g, sep)
+  }
+  if ((s[1] || '').length < prec) {
+    s[1] = s[1] || ''
+    s[1] += new Array(prec - s[1].length + 1).join('0')
+  }
+  return s.join(dec)
+}
+
+// Add total money
+function recalculateTotal(sc) {
+    var total = 0;
+    $('#selected-seats').find('option:selected').each(function () {
+        total += Number($(this).attr('alt'));
+    });
+
+    return number_format(total,2,'.','');
+}
+
+
+// function() {
+//     $("#sold-button").click(function(event) {
+//     	console.log(this);
+//         // alert(event.target.id);
+//     });
+// }
+// ----AJAX------    
+// setInterval(function() {
+// 	$.ajax({
+// 		type     : 'get',
+// 		url      : '/bookings/get/100',
+// 		dataType : 'json',
+// 		success  : function(response) {
+// 			//iterate through all bookings for our event 
+// 			$.each(response.bookings, function(index, booking) {
+// 				//find seat by id and set its status to unavailable
+// 				sc.status(booking.seat_id, 'unavailable');
+// 			});
+// 		}
+// 	});
+// }, 10000); //every 10 seconds   		
+</script>
+<script src="modal.js"></script> 
+<!-- canvas -->
+<!-- <script type="text/javascript">
+var canvas = document.getElementsByTagName('canvas')[0];
+	canvas.width = 800;
+canvas.height = 600;
+
+	var gkhead = new Image;
+
+	window.onload = function(){		
+    
+		    var ctx = canvas.getContext('2d');
+		    trackTransforms(ctx);
+		  
+    function redraw(){
+
+          // Clear the entire canvas
+          var p1 = ctx.transformedPoint(0,0);
+          var p2 = ctx.transformedPoint(canvas.width,canvas.height);
+          ctx.clearRect(p1.x,p1.y,p2.x-p1.x,p2.y-p1.y);
+
+          ctx.save();
+          ctx.setTransform(1,0,0,1,0,0);
+          ctx.clearRect(0,0,canvas.width,canvas.height);
+          ctx.restore();
+
+          ctx.drawImage(gkhead,0,0);
+
+        }
+        redraw();
+
+      var lastX=canvas.width/2, lastY=canvas.height/2;
+
+      var dragStart,dragged;
+
+      canvas.addEventListener('mousedown',function(evt){
+          document.body.style.mozUserSelect = document.body.style.webkitUserSelect = document.body.style.userSelect = 'none';
+          lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
+          lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
+          dragStart = ctx.transformedPoint(lastX,lastY);
+          dragged = false;
+      },false);
+
+      canvas.addEventListener('mousemove',function(evt){
+          lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
+          lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
+          dragged = true;
+          if (dragStart){
+            var pt = ctx.transformedPoint(lastX,lastY);
+            ctx.translate(pt.x-dragStart.x,pt.y-dragStart.y);
+            redraw();
+                }
+      },false);
+
+      canvas.addEventListener('mouseup',function(evt){
+          dragStart = null;
+          if (!dragged) zoom(evt.shiftKey ? -1 : 1 );
+      },false);
+
+      var scaleFactor = 1.1;
+
+      var zoom = function(clicks){
+          var pt = ctx.transformedPoint(lastX,lastY);
+          ctx.translate(pt.x,pt.y);
+          var factor = Math.pow(scaleFactor,clicks);
+          ctx.scale(factor,factor);
+          ctx.translate(-pt.x,-pt.y);
+          redraw();
+      }
+
+      var handleScroll = function(evt){
+          var delta = evt.wheelDelta ? evt.wheelDelta/40 : evt.detail ? -evt.detail : 0;
+          if (delta) zoom(delta);
+          return evt.preventDefault() && false;
+      };
+    
+      canvas.addEventListener('DOMMouseScroll',handleScroll,false);
+      canvas.addEventListener('mousewheel',handleScroll,false);
+	};
+
+	gkhead.src = 'http://phrogz.net/tmp/gkhead.jpg';
+	
+	// Adds ctx.getTransform() - returns an SVGMatrix
+	// Adds ctx.transformedPoint(x,y) - returns an SVGPoint
+	function trackTransforms(ctx){
+      var svg = document.createElementNS("http://www.w3.org/2000/svg",'svg');
+      var xform = svg.createSVGMatrix();
+      ctx.getTransform = function(){ return xform; };
+
+      var savedTransforms = [];
+      var save = ctx.save;
+      ctx.save = function(){
+          savedTransforms.push(xform.translate(0,0));
+          return save.call(ctx);
+      };
+    
+      var restore = ctx.restore;
+      ctx.restore = function(){
+        xform = savedTransforms.pop();
+        return restore.call(ctx);
+		      };
+
+      var scale = ctx.scale;
+      ctx.scale = function(sx,sy){
+        xform = xform.scaleNonUniform(sx,sy);
+        return scale.call(ctx,sx,sy);
+		      };
+    
+      var rotate = ctx.rotate;
+      ctx.rotate = function(radians){
+          xform = xform.rotate(radians*180/Math.PI);
+          return rotate.call(ctx,radians);
+      };
+    
+      var translate = ctx.translate;
+      ctx.translate = function(dx,dy){
+          xform = xform.translate(dx,dy);
+          return translate.call(ctx,dx,dy);
+      };
+    
+      var transform = ctx.transform;
+      ctx.transform = function(a,b,c,d,e,f){
+          var m2 = svg.createSVGMatrix();
+          m2.a=a; m2.b=b; m2.c=c; m2.d=d; m2.e=e; m2.f=f;
+          xform = xform.multiply(m2);
+          return transform.call(ctx,a,b,c,d,e,f);
+      };
+    
+      var setTransform = ctx.setTransform;
+      ctx.setTransform = function(a,b,c,d,e,f){
+          xform.a = a;
+          xform.b = b;
+          xform.c = c;
+          xform.d = d;
+          xform.e = e;
+          xform.f = f;
+          return setTransform.call(ctx,a,b,c,d,e,f);
+      };
+    
+      var pt  = svg.createSVGPoint();
+      ctx.transformedPoint = function(x,y){
+          pt.x=x; pt.y=y;
+          return pt.matrixTransform(xform.inverse());
+      }
+	}
+</script> -->
+</body>
+</html>

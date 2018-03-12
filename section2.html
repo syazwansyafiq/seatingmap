@@ -1,0 +1,226 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seat Charts Prototype</title>
+<link href="http://www.jqueryscript.net/css/jquerysctipttop.css" rel="stylesheet" type="text/css">
+<link rel="stylesheet" type="text/css" href="jquery.seat-charts.css">
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+
+<body><div id="jquery-script-menu" style=" text-align: center;">
+	<h1>Seat Charts Prototype</h1>
+</div>
+<div class="wrapper">
+  <div class="container">
+  		<!-- <canvas id="canvas" width="800" height="600"></canvas> -->
+  		<div id="seat-map">
+      		
+    	</div>
+  	
+	    <div class="booking-details">
+			<h2>Booking Details</h2>
+			<h3> Selected Seats (<span id="counter">0</span>):</h3>
+			<ul id="selected-seats">
+			</ul>
+			Total: <b>$<span id="total">0</span></b>
+			<button class="checkout-button" id="myBtn" >Checkout &raquo;</button>
+			<!-- <button class="sold-button">Change to Sold &raquo;</button> -->
+			<div id="legend"></div>
+            <button class="button" onclick="window.location.href='index.html'">Back To Index &raquo;</button>
+	    </div>
+  </div>
+  <div id="myModal" class="modal">
+
+  <!-- Modal content -->
+  <div class="modal-content">
+    <div class="modal-header">
+      <span class="close">&times;</span>
+      <h2>Checkout Modal</h2>
+    </div>
+    <div class="modal-body">
+      <p>Checkout</p>
+      <p>Ticket Booked: R1S22ST1 Front Seat RM 200 </p>
+      <p>Total: RM 200 </p>
+
+    </div>
+    <div class="modal-footer">
+      <h3>Modal Footer</h3>
+    </div>
+  </div>
+
+</div>
+</div>
+<script src="http://code.jquery.com/jquery-1.12.4.min.js"></script> 
+<script src="jquery.seat-charts.js"></script> 
+<script>
+
+var price = 0; //price
+var $cart = $('#selected-seats'); //Sitting Area
+var $counter = $('#counter'); //Votes
+var $total = $('#total'); //Total money
+
+var seatSection = 2;
+
+var seatMap = [
+    'aaaaaaaaaaaaaaaaaaaaaaaaa',
+    'aaaaaaaaaaaaaaaaaaaaaaaaa',
+    'aaaaaaaaaaaaaaaaaaaaaaaaa',
+    'aaaaaaaaaaaaaaaaaaaaaaaaa',
+    'aaaaaaaaaaaaaaaaaaaaaaaaa',];
+var seatPrefix = ['B','C','D','E', 'F'];
+var seatName = [];
+
+var seatInfo = {
+	a:{
+
+    	price: 99.9,
+    	section : seatSection,
+    	classes : 'Standard', 
+		category: ' Standard'
+    },
+    b:{
+        price: 200,
+        section : seatSection,
+        classes : 'Premium', 
+		category: ' Premium'
+    }
+};
+
+var seatItems = [
+            [ 'a', 'available',   'Standard Seat (RM 99)' ],
+            [ 'a', 'unavailable', 'Sold']
+        ];
+        
+var maxSeats = 2;
+
+for (var i = 0; i < 26; i++){
+	seatName.push(seatPrefix[i]);
+}
+
+var rowName = 'R';
+var colName = 'S';
+var secName = 'ST';
+var soldSeat = ['B_3'];
+
+
+var sc = $('#seat-map').seatCharts({
+    map: seatMap,
+    naming : {
+        top : true,
+        rows: seatName,
+        getLabel : function (character, row, column) {
+            return column;
+        }
+    },
+    seats:seatInfo,
+
+    legend : { //Definition legend
+        node : $('#legend'),
+        items : seatItems
+    },
+    click: function () { //Click event
+    	
+        if (this.status() == 'available') { //optional seat
+            var ms = sc.find('selected').length;
+
+            //alert(ms);
+            if (ms < maxSeats) {
+
+                price = this.settings.data.price;
+
+
+
+        $('<option selected>'+rowName+(this.settings.row+1)+colName+this.settings.label+secName+this.settings.data.section+this.settings.data.category+' RM '+this.settings.data.price+'</option>')
+                    .attr('id', 'cart-item-'+this.settings.id)
+                    .attr('value', this.settings.id)
+                    .attr('alt', price)
+                    .data('seatId', this.settings.id)
+                    .appendTo($cart);
+
+                $counter.text(sc.find('selected').length+1);
+                $counter.attr('value', sc.find('selected').length+1);
+
+                $total.text(recalculateTotal(sc));
+                $total.attr('value', recalculateTotal(sc));
+
+                return 'selected';
+            }
+                alert('You can only choose '+ maxSeats + ' seats.');
+                return 'available';
+
+        } else if (this.status() == 'selected') { //Checked
+
+                //Update Number
+                $counter.text(sc.find('selected').length-1);
+                $counter.attr('value', sc.find('selected').length-1);
+
+                //Delete reservation
+                // $('#cart-item-'+this.settings.id).remove();
+
+                //update totalnum
+                $total.text(recalculateTotal(sc));
+                $total.attr('value', recalculateTotal(sc));
+
+                //Delete reservation
+                  $('#cart-item-'+this.settings.id).remove();
+                //optional
+                return 'available';
+
+        } else if (this.status() == 'unavailable') { //sold
+            return 'unavailable';
+
+        } else {
+            return this.style();
+        }
+    },
+
+});
+sc.get(soldSeat).status('unavailable');
+// sc.find('unavailable').node().fadeOut('fast');
+
+
+
+function number_format (number, decimals, decPoint, thousandsSep) { // eslint-disable-line camelcase
+
+  number = (number + '').replace(/[^0-9+\-Ee.]/g, '')
+  var n = !isFinite(+number) ? 0 : +number
+  var prec = !isFinite(+decimals) ? 0 : Math.abs(decimals)
+  var sep = (typeof thousandsSep === 'undefined') ? ',' : thousandsSep
+  var dec = (typeof decPoint === 'undefined') ? '.' : decPoint
+  var s = ''
+  var toFixedFix = function (n, prec) {
+    var k = Math.pow(10, prec)
+    return '' + (Math.round(n * k) / k)
+      .toFixed(prec)
+  }
+  // @todo: for IE parseFloat(0.55).toFixed(0) = 0;
+  s = (prec ? toFixedFix(n, prec) : '' + Math.round(n)).split('.')
+  if (s[0].length > 3) {
+    s[0] = s[0].replace(/\B(?=(?:\d{3})+(?!\d))/g, sep)
+  }
+  if ((s[1] || '').length < prec) {
+    s[1] = s[1] || ''
+    s[1] += new Array(prec - s[1].length + 1).join('0')
+  }
+  return s.join(dec)
+}
+
+// Add total money
+function recalculateTotal(sc) {
+    var total = 0;
+    $('#selected-seats').find('option:selected').each(function () {
+        total += Number($(this).attr('alt'));
+    });
+
+    return number_format(total,2,'.','');
+}
+
+   		
+</script>
+<script src="modal.js"></script> 
+
+</body>
+</html>
